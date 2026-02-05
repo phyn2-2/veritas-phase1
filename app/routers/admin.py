@@ -156,7 +156,6 @@ async def verify_submission(
             notes=f"[Duplicate] Already {contribution.status.value}. {verification.notes or ''}"
         )
         db.add(log_entry)
-        db.commit()
 
         return contribution
 
@@ -184,7 +183,6 @@ async def verify_submission(
         db.add(log_entry)
 
         # Commit both changes atomically
-        db.commit()
         db.refresh(contribution)
 
     except Exception as e:

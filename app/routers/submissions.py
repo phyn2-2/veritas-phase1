@@ -6,12 +6,16 @@ Business rules:
 3.All submissions start as PENDING status
 4.Users can only view their own submissions
 5.File URLs must be HTTPS (validated in schema)
+
+HARDENING UPDATES:
+- Row locking on user to prevent concurrent pending limit bypass
+- Explicit transaction boundary
 """
 from fastapi import APIRouter, HTTPException, status
 from sqlalchemy import func
 from app.dependencies import DbSession, CurrentUser
 from app.schemas import ContributionCreate, ContributionResponse, PaginationParams
-from app.models import Contribution, ContributionStatus
+from app.models import Contribution, ContributionStatus, User
 from app.config import get_settings
 
 settings = get_settings()
@@ -57,9 +61,23 @@ async def create_submission(
     - HTTPS-only enforced in Pydantic schema
     - No file upload in Phase 1 (external hosting only)
     - Admin manually verifies URL during review
+
+    Hardening: Transaction with SELECT FOR UPDATE to prevent race conditions
     """
-    # Transaction: Check pending count + insert (atomic)
-    # with_for_update() acquires row lock to prevent concurrent limit bypass
+    # Start explicit transaction
+    # Note: get_db already wraps in transaction, but we need explicit lock
+
+    # Lock user's pending contributions to prevent concurrent bypass
+    # Strategy: Lock user row (prevents concurrent pending checks)
+# NOTE:
+# SQLite ignores SELECT ... FOR UPDATE.
+# Race-condition protection becomes effective when migrating to PostgreSQL.
+
+    user_lock = db.query(User).filter(
+        User.id == current_user.id
+    ).with_for_update().first()  # Locks user row
+
+    # Now count pending (within lock)
     pending_count = db.query(func.count(Contribution.id)).filter(
         Contribution.user_id == current_user.id,
         Contribution.status == ContributionStatus.PENDING
@@ -82,8 +100,8 @@ async def create_submission(
     )
 
     db.add(contribution)
-    db.commit()
-    db.refresh(contribution)
+    db.flush()  # Get contribution.id before transaction ends
+
 
     return contribution
 

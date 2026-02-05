@@ -67,6 +67,8 @@ def create_access_token(data: dict, expires_delta: Optional[timedelta] = None) -
         settings.SECRET_KEY,
         algorithm=settings.ALGORITHM
     )
+    print("ENCODE SECRET:", settings.SECRET_KEY)
+    print("ENCODE ALG:", settings.ALGORITHM)
     return encoded_jwt
 
 def decode_access_token(token: str) -> Optional[dict]:
@@ -87,6 +89,8 @@ def decode_access_token(token: str) -> Optional[dict]:
             settings.SECRET_KEY,
             algorithms=[settings.ALGORITHM]
         )
+        print("DECODE SECRET:", settings.SECRET_KEY)
+        print("DECODE ALG:", settings.ALGORITHM)
         return payload
     except jwt.ExpiredSignatureError:
         # Token expired (normal after 30min)

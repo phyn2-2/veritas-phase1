@@ -59,6 +59,8 @@ async def get_current_user(
 
     Wht async: Future-proofs for async DB drivers (SQLAlchemy 2.0+)
     Current: No performance benefit (SQLite is sync), but FastAPI compatible
+
+    HARDENING: Handles malformed token.sub gracefully (returns 401, not 500)
     """
     token = credentials.credentials
 
@@ -72,8 +74,17 @@ async def get_current_user(
         )
 
     # Extract user ID from token
-    user_id: str = payload.get("sub")
-    if user_id is None:
+    user_id_str: str = payload.get("sub")
+    if user_id_str is None:
+        raise HTTPException(
+            status_code=status.HTTP_401_UNAUTHORIZED,
+            detail="Invalid token payload",
+            headers={"WWW-Authenticate": "Bearer"}
+        )
+    # Handle non-integer user_id gracefully
+    try:
+        user_id = int(user_id_str)
+    except (ValueError, TypeError):
         raise HTTPException(
             status_code=status.HTTP_401_UNAUTHORIZED,
             detail="Invalid token payload",

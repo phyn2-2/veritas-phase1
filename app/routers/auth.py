@@ -62,8 +62,16 @@ async def register(user_data: UserCreate, db: DbSession):
 
     try:
         db.add(user)
-        db.commit()
-        db.refresh(user)
+        db.flush()
+
+        return {
+            "id": user.id,
+            "email": user.email,
+            "username": user.username,
+            "is_admin": user.is_admin
+        }
+
+
     except IntegrityError as e:
         db.rollback()
         # Parse error to determine which constraint failed
