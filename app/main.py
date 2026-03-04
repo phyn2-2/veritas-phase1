@@ -14,6 +14,8 @@ from app.config import get_settings
 
 settings = get_settings()
 
+API_VERSION = "1.0.0"
+
 # ===============================
 # APPLICATION INSTANCE
 # ==============================
@@ -21,7 +23,7 @@ settings = get_settings()
 app = FastAPI(
     title="VERITAS Phase 1",
     description="Human-verified contribution system - API only",
-    version="0.1.0",
+    version=API_VERSION,
     docs_url="/docs",  # Swagger UI at /docs
     redoc_url="/redoc",  # ReDoc at /redoc
 )
@@ -65,7 +67,7 @@ async def root():
     """
     return {
         "status": "ok",
-        "version": "0.1.0",
+        "version": API_VERSION,
         "phase": "Phase 1 - Feasibility Probe"
     }
 
